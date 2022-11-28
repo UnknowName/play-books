@@ -1,0 +1,26 @@
+{%- set host_ip=hostvars[inventory_hostname]['ansible_default_ipv4']['address'] -%}
+{%- set num=hostvars[host]['ansible_processor_count'] -%}
+rabbitmq:
+  image: rabbitmq:3.8-management-alpine
+  restart: always
+  privileged: true
+  container_name: rabbitmq-{{ ENV }}
+  {% for host in groups['rabbitmq'] %}
+  {%- set invent_ip=hostvars[host]['ansible_default_ipv4']['address'] -%}
+  {%- if host_ip == invent_ip -%}
+  hostname: rabbit{{ loop.index }}
+  {% endif %}
+  {%- endfor -%}
+  net: host
+  volumes:
+    - ./hosts:/etc/hosts
+    - ./data:/var/lib/rabbitmq
+    - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+  environment:
+    - TZ=Asia/Shanghai
+    - RABBITMQ_ERLANG_COOKIE=build.by.2019
+    - RABBITMQ_DEFAULT_USER=guest
+    - RABBITMQ_DEFAULT_PASS=guest
+    # Erlang VM I/O Thread Pool() 32-128。CPU * 4
+    - RABBITMQ_IO_THREAD_POOL_SIZE = 32
+    - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS = "+A 128"
